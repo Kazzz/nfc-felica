@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello_tag">FeliCaカードをかざしてください</string>
+    <string name="app_name">NFCFeliCaReader</string>
+    <string name="read_label">再読込み </string>
+    <string name="history_label">使用履歴 </string>
+    <string name="inout_label">入退場記録 </string>
+</resources>
