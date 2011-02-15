@@ -69,13 +69,14 @@ public class NFCFeliCaReader extends Activity implements OnClickListener {
         Intent intent = this.getIntent();
         String action = intent.getAction();
 
-        // android.nfc.extra.TAG 退避
-        this.nfcTag = intent.getParcelableExtra("android.nfc.extra.TAG");
-
         if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)) {
+            // android.nfc.extra.TAG 退避
+            this.nfcTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+
+            FeliCaLib.IDm idm = new FeliCaLib.IDm(intent.getByteArrayExtra(NfcAdapter.EXTRA_ID));
             try {
                 String data = readData();
-                tv_tag.setText(data);
+                tv_tag.setText(idm.toString() + data);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -271,6 +272,7 @@ public class NFCFeliCaReader extends Activity implements OnClickListener {
             */
         } catch (Exception e) {
             e.printStackTrace();
+            return "";
         }
 
         String result = sb.toString();
