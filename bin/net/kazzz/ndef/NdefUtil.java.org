@@ -1,0 +1,251 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.kazzz.ndef;
+
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.Locale;
+
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.os.Parcelable;
+
+
+/**
+ * Ndefデータを扱うためのユーティリティを提供します
+ * 
+ * @author Kazzz
+ * @date 2011/02/16
+ * @since Android API Level 9
+ *
+ */
+
+public final class NdefUtil {
+    static final String TAG = "NdefUtil";
+    
+    private NdefUtil() { /*IGNORE*/ }
+    
+    /**
+     * テキスト{NdefRecord.RTD_TEXT}を扱うNdefRecordを新規作成します
+     * @param text ペイロードに埋め込むテキストをセット
+     * @param locale 現在のロケールをセット
+     * @return NdefRecord　生成したレコードが戻ります
+     */
+    public static NdefRecord newTextRecord(String text, Locale locale) {
+        return newTextRecord(text, locale, true);
+    }
+    /**
+     * テキスト{NdefRecord.RTD_TEXT}を扱うNdefRecordを新規作成します
+     * @param text ペイロードに埋め込むテキストをセット
+     * @param locale 現在のロケールをセット
+     * @param encodeInUtf8 UTF-8でエンコードする場合にtrueをセットします(falseの場合UTF-16でエンコードされます)
+     * @return NdefRecord　生成したレコードが戻ります
+     */
+    public static NdefRecord newTextRecord(String text, Locale locale, boolean encodeInUtf8) {
+
+        byte[] langBytes = locale.getLanguage().getBytes(Charset.forName("US-ASCII"));
+
+        Charset utfEncoding = encodeInUtf8 ? Charset.forName("UTF-8") : Charset.forName("UTF-16");
+        byte[] textBytes = text.getBytes(utfEncoding);
+
+        int utfBit = encodeInUtf8 ? 0 : (1 << 7);
+        char status = (char) (utfBit + langBytes.length);
+
+        ByteBuffer buff = ByteBuffer.allocate(1 +langBytes.length + textBytes.length);
+        buff.put(new byte[] { (byte) status }).put(langBytes).put(textBytes);
+
+        byte[] data = buff.array();
+        
+        return new NdefRecord(NdefRecord.TNF_WELL_KNOWN, NdefRecord.RTD_TEXT, new byte[0], data);
+    }
+    
+    /**
+     * Ndefレコードがテキストレコード(type = NdefRecord.RTD_TEXT )か否かを検査します
+     * @param record 対象のレコードをセット
+     * @return boolean 対象のレコードがテキストレコードの場合、trueが戻ります
+     */
+    public static boolean isText(NdefRecord record) {
+        /*
+         * payload[0] contains the "Status Byte Encodings" field, per
+         * the NFC Forum "Text Record Type Definition" section 3.2.1.
+         *
+         * bit7 is the Text Encoding Field.
+         *
+         * if (Bit_7 == 0): The text is encoded in UTF-8
+         * if (Bit_7 == 1): The text is encoded in UTF16
+         *
+         * Bit_6 is reserved for future use and must be set to zero.
+         *
+         * Bits 5 to 0 are the length of the IANA language code.
+         */
+        try {
+            byte[] payload = record.getPayload();
+
+            String textEncoding = ((payload[0] & 0200) == 0) ? "UTF-8" : "UTF-16";
+            int languageCodeLength = payload[0] & 0077;
+
+            //String languageCode = new String(payload, 1, languageCodeLength, "US-ASCII");
+            String text = new String(payload,
+                    languageCodeLength + 1,
+                    payload.length - languageCodeLength - 1,
+                    textEncoding);
+            
+            return ( text != null );
+        } catch (UnsupportedEncodingException e) {
+            return false;
+        }           
+    }
+    /**
+     * Ndefレコードがテキストレコード(type = NdefRecord.RTD_TEXT )であることを前提にして、
+     * 内部ペイロードからテキストを取得します
+     * @param record 対象のレコードをセット
+     * @return String レコードのペイロードに格納されている文字列が戻ります
+     */
+    public static String getText(NdefRecord record) {
+        /*
+         * payload[0] contains the "Status Byte Encodings" field, per
+         * the NFC Forum "Text Record Type Definition" section 3.2.1.
+         *
+         * bit7 is the Text Encoding Field.
+         *
+         * if (Bit_7 == 0): The text is encoded in UTF-8
+         * if (Bit_7 == 1): The text is encoded in UTF16
+         *
+         * Bit_6 is reserved for future use and must be set to zero.
+         *
+         * Bits 5 to 0 are the length of the IANA language code.
+         */
+        try {
+            byte[] payload = record.getPayload();
+
+            String textEncoding = ((payload[0] & 0200) == 0) ? "UTF-8" : "UTF-16";
+            int languageCodeLength = payload[0] & 0077;
+
+            //String languageCode = new String(payload, 1, languageCodeLength, "US-ASCII");
+            String text = new String(payload,
+                    languageCodeLength + 1,
+                    payload.length - languageCodeLength - 1,
+                    textEncoding);
+            return text;
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException(e);
+        }           
+    }
+    /**
+     * タグ情報がNdefタグか否かを検査します
+     * @param tag デバイスから取得したタグ( "android.nfc.extra.TAG" )をセットします
+     * @return boolean Ndefタグだった場合にはtrueが戻ります
+     * @throws NdefException
+     */
+    public static boolean isNdef(Parcelable tag) throws NdefException {
+        return  (Boolean) invokeINfcTag("isNdef", tag);
+    }
+    
+    /**
+     * NdefMessageをデバイスから読み込みます
+     * @param tag デバイスから取得したタグ( "android.nfc.extra.TAG" )をセットします
+     * @param ndefMessage 書き込むNdefMessageをセット
+     * @return NdefMessage 読み込まれたNdefMessageが戻ります
+     * @throws NdefException
+     */
+    public static NdefMessage readNdefMessage(Parcelable tag) throws NdefException {
+        Object result =  invokeINfcTag("read", tag);
+        return ( result instanceof NdefMessage) 
+            ? (NdefMessage)result
+            : null;
+    }
+    /**
+     * NdefMessageをデバイス側に書き込みます
+     * @param tag デバイスから取得したタグ( "android.nfc.extra.TAG" )をセットします
+     * @param ndefMessage 書き込むNdefMessageをセット
+     * @return int writeメソッドの結果が戻ります
+     * @throws NdefException
+     */
+    public static int writeNdefMessage(Parcelable tag, NdefMessage ndefMessage) throws NdefException{
+        return (Integer) invokeINfcTag("write", tag, ndefMessage);
+    }
+ 
+    /**
+     * INfcTagのメソッドをリフレクションを使って起動します
+     * 
+     * @param methodName 実行するメソッド名をセット
+     * @param tag デバイスから取得したタグ( "android.nfc.extra.TAG" )をセットします
+     * @param params メソッドの引数をセット
+     * @return メソッドの実行結果が戻ります
+     * @throws NdefException
+     */
+    public static final Object invokeINfcTag(String methodName, Parcelable tag, Object... params) throws NdefException {
+        try {
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter();
+            
+            // android.nfc.RawTagConnectionを生成
+            Class<?> tagClass = Class.forName("android.nfc.Tag");
+            Method createRawTagConnection = 
+                adapter.getClass().getMethod("createRawTagConnection", tagClass);
+            Object rawTagConnection = createRawTagConnection.invoke(adapter, tag);
+            // android.nfc.RawTagConnection#mTagServiceフィールドを取得 (NfcService.INfcTagへの参照が入っている)
+            Field f = rawTagConnection.getClass().getDeclaredField("mTagService");
+            f.setAccessible(true);
+            Object tagService = f.get(rawTagConnection);
+
+            //ServiceHandleを取得
+            f = tagClass.getDeclaredField("mServiceHandle");
+            f.setAccessible(true);
+            int serviceHandle = (Integer) f.get(tag);  
+
+            
+            Method connect = rawTagConnection.getClass().getMethod("connect");
+            connect.invoke(rawTagConnection);
+
+            try {
+                
+                Class<?>[] typeArray = new Class[params.length+1];
+                typeArray[0] = Integer.TYPE;
+                
+                Object[] paramArray = new Object[params.length+1];
+                paramArray[0] = serviceHandle;
+                
+                for ( int i = 0; i < params.length ; i++ ) {
+                    typeArray[i+1] = params[i].getClass();
+                    paramArray[i+1] = params[i];
+                }
+                
+                Method method = tagService.getClass().getMethod(methodName, typeArray);
+                Object result = method.invoke(tagService, paramArray);
+                return result;
+            } finally {
+               // Method close = tagService.getClass().getMethod("close", Integer.TYPE);
+               // close.invoke(tagService, serviceHandle);
+
+            }
+        } catch (ClassNotFoundException e){
+            throw new NdefException(e);
+        } catch (NoSuchMethodException e){
+            throw new NdefException(e);
+        } catch (SecurityException e){
+            throw new NdefException(e);
+        } catch (NoSuchFieldException e){
+            throw new NdefException(e);
+        } catch (IllegalAccessException e){
+            throw new NdefException(e);
+        } catch (IllegalArgumentException e){
+            throw new NdefException(e);
+        } catch (InvocationTargetException e){
+            throw new NdefException(e);
+        }            
+    }
+}

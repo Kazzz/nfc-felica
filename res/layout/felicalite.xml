@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+ xmlns:android="http://schemas.android.com/apk/res/android"
+ android:orientation="vertical"
+ android:layout_width="fill_parent"
+ android:layout_height="fill_parent"
+>
+ <TextView
+  android:layout_width="wrap_content"
+  android:id="@+id/lbl_caption"
+  android:layout_height="wrap_content"
+ android:text="@string/caption_label"></TextView>
+ <ListView android:id="@+id/list_memblock" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="8" android:clickable="true"></ListView>
+ <ScrollView
+  android:id="@+id/ScrollView01"
+  android:layout_width="fill_parent"
+  android:layout_height="wrap_content"
+  android:layout_weight="8"
+ android:visibility="gone">
+
+ </ScrollView>
+ <LinearLayout
+  android:layout_height="wrap_content"
+  android:layout_width="fill_parent"
+  android:visibility="visible"
+  android:layout_weight="0"
+  android:orientation="vertical"
+  android:id="@+id/pnl_uiBlock"
+ >
+  <LinearLayout
+   android:layout_height="match_parent"
+   android:layout_width="fill_parent"
+   android:layout_weight="1"
+   android:id="@+id/pnl_writeblock2"
+  >
+   <EditText
+    android:hint="@string/hint_label"
+    android:id="@+id/edit_write"
+    android:layout_height="fill_parent"
+    android:layout_width="wrap_content"
+    android:layout_weight="1"
+   ></EditText>
+   <Button
+    android:layout_height="fill_parent"
+    android:layout_width="wrap_content"
+    android:text="@string/write_label"
+    android:layout_weight="0"
+    android:id="@+id/btn_write"
+   ></Button>
+  </LinearLayout>
+ </LinearLayout>
+
+</LinearLayout>
