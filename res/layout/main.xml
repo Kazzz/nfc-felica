@@ -7,25 +7,53 @@
 >
  <ScrollView
   android:id="@+id/ScrollView01"
-  android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="1">
- <TextView
-  android:id="@+id/result_tv"
   android:layout_width="fill_parent"
   android:layout_height="wrap_content"
-  android:text="@string/hello_tag" android:textSize="20sp"></TextView>
+  android:layout_weight="8"
+ >
+  <TextView
+   android:id="@+id/result_tv"
+   android:layout_width="fill_parent"
+   android:layout_height="wrap_content"
+   android:text="@string/hello_tag"
+  ></TextView>
 
  </ScrollView>
  <LinearLayout
+  android:layout_height="wrap_content"
   android:layout_width="fill_parent"
-  android:orientation="horizontal"
- android:layout_height="fill_parent" android:layout_weight="10">
-  <Button android:layout_weight="1" android:layout_width="fill_parent" android:text="@string/read_label" android:layout_height="wrap_content" android:id="@+id/btn_read"></Button><Button android:layout_weight="1" android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="@string/history_label" android:id="@+id/brn_hitory"></Button><Button
-   android:layout_weight="1"
-   android:layout_width="fill_parent"
+  android:visibility="visible"
+  android:layout_weight="0"
+  android:orientation="vertical"
+  android:id="@+id/pnl_uiBlock"
+ >
+  <LinearLayout
+   android:orientation="horizontal"
    android:layout_height="wrap_content"
-   android:text="@string/inout_label" android:id="@+id/btn_inout"></Button>
- 
-
-</LinearLayout>
+   android:layout_weight="0"
+   android:layout_width="fill_parent"
+   android:id="@+id/pnl_felicaBlock"
+  >
+   <Button
+    android:layout_height="wrap_content"
+    android:text="@string/read_label"
+    android:layout_weight="1"
+    android:id="@+id/btn_read"
+   android:layout_width="wrap_content"></Button>
+   <Button
+    android:layout_height="wrap_content"
+    android:text="@string/history_label"
+    android:layout_weight="1"
+    android:id="@+id/btn_hitory"
+   android:layout_width="wrap_content"></Button>
+   <Button
+    android:layout_height="wrap_content"
+    android:layout_width="fill_parent"
+    android:text="@string/inout_label"
+    android:id="@+id/btn_inout"
+   android:layout_weight="1" android:visibility="gone"></Button>
+   <Button android:layout_width="wrap_content" android:layout_height="fill_parent" android:id="@+id/btn_write" android:layout_weight="1" android:text="@string/felicalite_label"></Button>
+  </LinearLayout>
+ </LinearLayout>
 
 </LinearLayout>

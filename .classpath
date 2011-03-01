@@ -4,6 +4,6 @@
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="lib" path="lib/guava-r07.jar"/>
-	<classpathentry kind="src" path="nfc-felica-lib_src"/>
+	<classpathentry kind="src" path="nfc-felica-lib-2.3.3_src"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

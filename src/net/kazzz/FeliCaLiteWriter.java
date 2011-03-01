@@ -21,8 +21,10 @@ import net.kazzz.felica.lib.FeliCaLib.IDm;
 import net.kazzz.felica.lib.FeliCaLib.MemoryConfigurationBlock;
 import net.kazzz.felica.lib.FeliCaLib.PMm;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.Log;
@@ -199,38 +201,64 @@ public class FeliCaLiteWriter extends Activity implements OnClickListener {
 
     public void onClick(final View v) {
         try {
-            switch (v.getId()) {
-                case R.id.btn_write:
-                    this.runOnUiThread(new Thread(){
-                        @Override
-                        public void run() {
-                            try {
-                                final EditText editWrite = (EditText) findViewById(R.id.edit_write);
-                                final CharSequence c = editWrite.getText();
-                                
-                                byte addr = (byte) (((Integer)editWrite.getTag()) & 0xff);
-                                WriteResponse wr = writeData(addr, c); 
-                                if ( wr != null && wr.getStatusFlag1() == 0) {
-                                    //tv_tag.setText(readData());
-                                    Toast.makeText(v.getContext()
-                                            , "書きこみ成功 : " + c.toString() , Toast.LENGTH_LONG).show();
-                                    
-                                    //終了して自身を起動 (リフレッシュ)
-                                    finish();
-                                    Intent intent = new Intent(FeliCaLiteWriter.this, FeliCaLiteWriter.class);
-                                    intent.putExtra("nfcTag", FeliCaLiteWriter.this.nfcTag);
-                                    startActivity(intent);
-                                }
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-                    break;
-                default:
-                    break;
-            }
+            final int id = v.getId();
+            final ProgressDialog dialog = new ProgressDialog(this);
+            dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            dialog.setIndeterminate(true);
 
+            
+            final EditText editWrite = (EditText) findViewById(R.id.edit_write);
+            final CharSequence c = editWrite.getText();
+
+            AsyncTask<Void, Void, WriteResponse> task = new AsyncTask<Void, Void, WriteResponse>() {
+                @Override
+                protected void onPreExecute() {
+                    switch (id) {
+                    case R.id.btn_write:
+                        dialog.setMessage("書き込み処理を実行中です...");
+                        break;
+                    }
+                    dialog.show();
+                }
+                @Override
+                protected WriteResponse doInBackground(Void... arg0) {
+                    switch (id) {
+                    case R.id.btn_write:
+                        byte addr = (byte) (((Integer)editWrite.getTag()) & 0xff);
+                        try {
+                            return writeData(addr, c);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } 
+                    default:
+                        break;
+                    }
+                    return null;
+                }
+
+                /* (non-Javadoc)
+                 * @see android.os.AsyncTask#onPostExecute(java.lang.Object)
+                 */
+                @Override
+                protected void onPostExecute(WriteResponse result) {
+                    dialog.dismiss();
+                    if ( result != null && result.getStatusFlag1() == 0) {
+                        //tv_tag.setText(readData());
+                        Toast.makeText(v.getContext()
+                                , "書きこみ成功 : " + c.toString() , Toast.LENGTH_LONG).show();
+                        
+                        //終了して自身を起動 (リフレッシュ)
+                        finish();
+                        Intent intent = new Intent(FeliCaLiteWriter.this, FeliCaLiteWriter.class);
+                        intent.putExtra("nfcTag", FeliCaLiteWriter.this.nfcTag);
+                        startActivity(intent);
+                    }
+                }
+                
+            };
+            
+            task.execute();
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
