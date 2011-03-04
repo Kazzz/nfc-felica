@@ -2,7 +2,11 @@
 <resources>
     <string name="hello_tag">FeliCaカードをかざしてください</string>
     <string name="app_name">NFCFeliCaReader</string>
-    <string name="read_label">再読込み </string>
-    <string name="history_label">使用履歴 </string>
-    <string name="inout_label">入退場記録 </string>
+    <string name="caption_label">FeliCa Lite MemoryConfigrationBlock</string>
+    <string name="read_label">再読込</string>
+    <string name="felicalite_label">書きこみ画面</string>
+    <string name="write_label">書きこみ</string>
+    <string name="hint_label">16バイト以内で入力</string>
+    <string name="history_label">利用履歴</string>
+    <string name="inout_label">入退場履歴</string>
 </resources>

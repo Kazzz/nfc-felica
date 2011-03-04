@@ -14,20 +14,35 @@ public final class R {
         public static final int icon=0x7f020000;
     }
     public static final class id {
-        public static final int ScrollView01=0x7f050000;
-        public static final int brn_hitory=0x7f050003;
-        public static final int btn_inout=0x7f050004;
-        public static final int btn_read=0x7f050002;
-        public static final int result_tv=0x7f050001;
+        public static final int ScrollView01=0x7f060002;
+        public static final int btn_hitory=0x7f06000a;
+        public static final int btn_inout=0x7f06000b;
+        public static final int btn_read=0x7f060009;
+        public static final int btn_write=0x7f060006;
+        public static final int edit_write=0x7f060005;
+        public static final int lbl_caption=0x7f060000;
+        public static final int list_memblock=0x7f060001;
+        public static final int pnl_felicaBlock=0x7f060008;
+        public static final int pnl_uiBlock=0x7f060003;
+        public static final int pnl_writeblock2=0x7f060004;
+        public static final int result_tv=0x7f060007;
     }
     public static final class layout {
-        public static final int main=0x7f030000;
+        public static final int felicalite=0x7f030000;
+        public static final int main=0x7f030001;
     }
     public static final class string {
-        public static final int app_name=0x7f040001;
-        public static final int hello_tag=0x7f040000;
-        public static final int history_label=0x7f040003;
-        public static final int inout_label=0x7f040004;
-        public static final int read_label=0x7f040002;
+        public static final int app_name=0x7f050001;
+        public static final int caption_label=0x7f050002;
+        public static final int felicalite_label=0x7f050004;
+        public static final int hello_tag=0x7f050000;
+        public static final int hint_label=0x7f050006;
+        public static final int history_label=0x7f050007;
+        public static final int inout_label=0x7f050008;
+        public static final int read_label=0x7f050003;
+        public static final int write_label=0x7f050005;
+    }
+    public static final class xml {
+        public static final int nfc_tech_filter=0x7f040000;
     }
 }
