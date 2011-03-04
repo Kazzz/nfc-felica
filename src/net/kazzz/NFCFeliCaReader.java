@@ -22,14 +22,8 @@ import net.kazzz.felica.lib.FeliCaLib.ServiceCode;
 import net.kazzz.felica.lib.FeliCaLib.SystemCode;
 import net.kazzz.felica.suica.Suica;
 import android.app.Activity;
-import android.app.PendingIntent;
-import android.app.ProgressDialog;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.IntentFilter.MalformedMimeTypeException;
 import android.nfc.NfcAdapter;
-import android.nfc.tech.NfcF;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.Log;
@@ -40,22 +34,17 @@ import android.widget.Button;
 import android.widget.TextView;
 
 /**
- * FeliCa又はFeliCa Lite PICCのデータを読みこむリーダークラスのサンプル実装を提供します
+ * FeliCa PICCのデータを読みこむリーダークラスのサンプル実装を提供します
  *
  * @author Kazzz
  * @date 2011/01/21
- * @since Android API Level 10
+ * @since Android API Level 9
  *
  */
 
 public class NFCFeliCaReader extends Activity implements OnClickListener {
     private String TAG = "NFCFelicaTagReader";
     
-    private NfcAdapter adapter;
-    private PendingIntent pendingIntent;
-    private String[][] techLists;
-    private IntentFilter[] filters;
-
     private Parcelable nfcTag;
     private boolean iSFeliCaLite;
 
@@ -68,26 +57,52 @@ public class NFCFeliCaReader extends Activity implements OnClickListener {
                 WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
         
         setContentView(R.layout.main);
+        TextView tv_tag = (TextView) findViewById(R.id.result_tv);
 
-        //foregrandDispathchの準備
-        this.adapter = NfcAdapter.getDefaultAdapter(this);
-        this.techLists = new String[][] { new String[] { NfcF.class.getName() } };
-        this.pendingIntent = PendingIntent.getActivity(this, 0,
-                new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+        Button btnRead = (Button) findViewById(R.id.btn_read);
+        btnRead.setOnClickListener(this);
 
-        // Setup an intent filter for all MIME based dispatches
-        IntentFilter ndef = new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED);
-        try {
-            ndef.addDataType("*/*");
-        } catch (MalformedMimeTypeException e) {
-            throw new RuntimeException("fail", e);
-        }
-        this.filters = new IntentFilter[] {ndef};
+        Button btnHistory = (Button) findViewById(R.id.btn_hitory);
+        btnHistory.setOnClickListener(this);
+        btnHistory.setEnabled(false);
 
+        Button btnWrite = (Button) findViewById(R.id.btn_write);
+        btnWrite.setOnClickListener(this);
+        btnWrite.setEnabled(false);
 
-        //インテントから起動された際の処理
+        Button btnInout = (Button) findViewById(R.id.btn_inout);
+        btnInout.setOnClickListener(this);
+        btnInout.setEnabled(false);
+
         Intent intent = this.getIntent();
-        this.onNewIntent(intent);
+        String action = intent.getAction();
+
+        if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)) {
+            // android.nfc.extra.TAG 退避
+            this.nfcTag = intent.getParcelableExtra("android.nfc.extra.TAG");
+
+            try {
+                FeliCaLib.IDm idm = 
+                    new FeliCaLib.IDm(intent.getByteArrayExtra(NfcAdapter.EXTRA_ID));
+
+                if ( idm == null ) {
+                    throw new FeliCaException("Felica IDm を取得できませんでした");
+                }
+                
+                this.iSFeliCaLite = this.iSFeliCaLite();
+                  
+                btnHistory.setEnabled(!this.iSFeliCaLite);
+                btnWrite.setEnabled(this.iSFeliCaLite);
+                
+                String data = readData();
+                tv_tag.setText(data);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e(TAG, e.toString());
+            }
+        }
+        btnHistory.setEnabled(!this.iSFeliCaLite);
+        btnWrite.setEnabled(this.iSFeliCaLite);
     }
 
     /**
@@ -104,76 +119,54 @@ public class NFCFeliCaReader extends Activity implements OnClickListener {
     
     public void onClick(final View v) {
         try {
-            final int id = v.getId();
-            
-            final ProgressDialog dialog = new ProgressDialog(this);
-            dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            dialog.setIndeterminate(true);
-
-            AsyncTask<Void, Void, String> task = new AsyncTask<Void, Void, String>() {
-                @Override
-                protected void onPreExecute() {
-                    switch (id) {
-                    case R.id.btn_read:
-                        dialog.setMessage("読み込み処理を実行中です...");
-                        break;
-                    case R.id.btn_write:
-                        dialog.setMessage("書き込み画面に移動中です...");
-                        break;
-                    case R.id.btn_hitory:
-                        dialog.setMessage("使用履歴を読み込み中です...");
-                        break;
-                    }
-                    dialog.show();
-                }
-
-                @Override
-                protected String doInBackground(Void... arg0) {
-                    switch (id) {
-                    case R.id.btn_read:
-                        try {
-                            return readData();
-                        } catch (Exception e) {
-                            e.printStackTrace();
+            switch (v.getId()) {
+                case R.id.btn_read:
+                    this.runOnUiThread(new Thread(){
+                        @Override
+                        public void run() {
+                            try {
+                                TextView tv_tag = (TextView) findViewById(R.id.result_tv);
+                                tv_tag.setText(readData());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
-                        break;
-                    case R.id.btn_write:
-                        try {
-                            Intent intent = 
-                                new Intent(NFCFeliCaReader.this, FeliCaLiteWriter.class);
-                            intent.putExtra("nfcTag", NFCFeliCaReader.this.nfcTag);
-                            startActivity(intent);
-                            return "";
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        break;
-                    case R.id.btn_hitory:
-                        try {
-                            return readHistoryData();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        break;
-                    default:
-                        break;
-                    }
-                    return "";
-                }
+                    });
 
-                /* (non-Javadoc)
-                 * @see android.os.AsyncTask#onPostExecute(java.lang.Object)
-                 */
-                @Override
-                protected void onPostExecute(String result) {
-                    dialog.dismiss();
-                    TextView tv_tag = (TextView) findViewById(R.id.result_tv);
-                    if (result != null && result.length() > 0) tv_tag.setText(result);
-                }
-                
-            };
-            
-            task.execute();
+                    break;
+                case R.id.btn_write:
+                    this.runOnUiThread(new Thread(){
+                        @Override
+                        public void run() {
+                            try {
+                                Intent intent = new Intent(NFCFeliCaReader.this, FeliCaLiteWriter.class);
+                                intent.putExtra("nfcTag", NFCFeliCaReader.this.nfcTag);
+                                startActivity(intent);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+
+                    break;
+                case R.id.btn_hitory:
+                    this.runOnUiThread(new Thread(){
+                        @Override
+                        public void run() {
+                            try {
+                                TextView tv_tag = (TextView) findViewById(R.id.result_tv);
+                                tv_tag.setText(readHistoryData());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+
+                    break;
+                default:
+                    break;
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -303,77 +296,4 @@ public class NFCFeliCaReader extends Activity implements OnClickListener {
         Log.d(TAG, result);
         return result;
    }
-
-    /* (non-Javadoc)
-     * @see android.app.Activity#onNewIntent(android.content.Intent)
-     */
-    @Override
-    protected void onNewIntent(Intent intent) {
-        TextView tv_tag = (TextView) findViewById(R.id.result_tv);
-
-        Button btnRead = (Button) findViewById(R.id.btn_read);
-        btnRead.setOnClickListener(this);
-
-        Button btnHistory = (Button) findViewById(R.id.btn_hitory);
-        btnHistory.setOnClickListener(this);
-        btnHistory.setEnabled(false);
-
-        Button btnWrite = (Button) findViewById(R.id.btn_write);
-        btnWrite.setOnClickListener(this);
-        btnWrite.setEnabled(false);
-
-        Button btnInout = (Button) findViewById(R.id.btn_inout);
-        btnInout.setOnClickListener(this);
-        btnInout.setEnabled(false);
-
-        String action = intent.getAction();
-        //if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)) {
-        if (NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
-            // android.nfc.extra.TAG 退避
-            this.nfcTag = intent.getParcelableExtra("android.nfc.extra.TAG");
-
-            try {
-                FeliCaLib.IDm idm = 
-                    new FeliCaLib.IDm(intent.getByteArrayExtra(NfcAdapter.EXTRA_ID));
-
-                if ( idm == null ) {
-                    throw new FeliCaException("Felica IDm を取得できませんでした");
-                }
-                
-                this.iSFeliCaLite = this.iSFeliCaLite();
-                  
-                btnHistory.setEnabled(!this.iSFeliCaLite);
-                btnWrite.setEnabled(this.iSFeliCaLite);
-                
-                //String data = readData();
-                //tv_tag.setText(data);
-                
-                btnRead.performClick();
-            } catch (Exception e) {
-                e.printStackTrace();
-                Log.e(TAG, e.toString());
-            }
-        }
-        btnHistory.setEnabled(!this.iSFeliCaLite);
-        btnWrite.setEnabled(this.iSFeliCaLite);
-    }
-
-    /* (non-Javadoc)
-     * @see android.app.Activity#onPause()
-     */
-    @Override
-    protected void onPause() {
-        super.onPause();
-        this.adapter.disableForegroundDispatch(this);
-    }
-
-    /* (non-Javadoc)
-     * @see android.app.Activity#onResume()
-     */
-    @Override
-    protected void onResume() {
-        super.onResume();
-        this.adapter.enableForegroundDispatch(this
-                , this.pendingIntent, this.filters, this.techLists);
-    }
 }
